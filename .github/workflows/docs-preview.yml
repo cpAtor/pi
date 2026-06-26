@@ -1,0 +1,44 @@
+name: Docs Preview
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs-preview.yml'
+      - '.github/workflows/pages-docs.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docs bundle
+        run: |
+          set -euo pipefail
+          test -f docs/index.html
+          test -f docs/repo-architecture.html
+          test -f docs/conceptual-architecture.html
+          test -f docs/README.md
+          repo_diagrams=$(grep -o '<pre class="mermaid">' docs/repo-architecture.html | wc -l | tr -d ' ')
+          conceptual_diagrams=$(grep -o '<pre class="mermaid">' docs/conceptual-architecture.html | wc -l | tr -d ' ')
+          total_diagrams=$((repo_diagrams + conceptual_diagrams))
+          test "$repo_diagrams" -eq 12
+          test "$conceptual_diagrams" -eq 12
+          test "$total_diagrams" -eq 24
+
+      - name: Upload docs preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview-pr-${{ github.event.pull_request.number }}
+          path: docs/
+          if-no-files-found: error
+          retention-days: 14

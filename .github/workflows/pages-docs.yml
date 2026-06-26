@@ -1,0 +1,53 @@
+name: Pages Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-docs
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docs bundle
+        run: |
+          set -euo pipefail
+          test -f docs/index.html
+          test -f docs/repo-architecture.html
+          test -f docs/conceptual-architecture.html
+          repo_diagrams=$(grep -o '<pre class="mermaid">' docs/repo-architecture.html | wc -l | tr -d ' ')
+          conceptual_diagrams=$(grep -o '<pre class="mermaid">' docs/conceptual-architecture.html | wc -l | tr -d ' ')
+          test "$repo_diagrams" -eq 12
+          test "$conceptual_diagrams" -eq 12
+          test $((repo_diagrams + conceptual_diagrams)) -eq 24
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
