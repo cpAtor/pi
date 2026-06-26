@@ -11,7 +11,7 @@ This folder contains the architecture review deliverables added for PR preview a
 Use any static file server so the Mermaid ESM module can load cleanly:
 
 ```bash
-cd /home/runner/work/pi/pi
+cd <repo-root>
 python3 -m http.server 8000 --directory docs
 ```
 
